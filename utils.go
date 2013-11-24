@@ -29,3 +29,7 @@ func (t *EpochTime) UnmarshalJSON(b []byte) error {
 
 	return nil
 }
+
+func formatVolume(volume int64) string {
+	return fmt.Sprintf("%v", float64(volume)/BitcoinDivision)
+}

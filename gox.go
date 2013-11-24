@@ -31,14 +31,12 @@ const (
 	httpEndpoint  string = "http://mtgox.com/api/2"
 	originUrl     string = "http://websocket.mtgox.com"
 
-	TICKER StreamType = "ticker"
-	DEPTH  StreamType = "depth"
-	TRADES StreamType = "trades"
-
 	BID OrderType = "bid"
 	ASK OrderType = "ask"
 
 	secureConn bool = false
+
+	BitcoinDivision = 1e8
 )
 
 type Gox struct {
@@ -219,11 +217,7 @@ func (g *Gox) handle(data []byte) {
 
 	switch header.Private {
 	case "debug":
-		fmt.Println("DEBUG")
-
-		var payload map[string]interface{}
-		json.Unmarshal(data, &payload)
-		fmt.Println(string(PrettyPrintJson(payload)))
+		g.handleDebug(data)
 
 	case "ticker":
 		g.handleTicker(data)
@@ -235,12 +229,7 @@ func (g *Gox) handle(data []byte) {
 		g.handleDepth(data)
 
 	case "result":
-		// Handle Order and other result data here
-		fmt.Println("RESULT")
-
-		var payload map[string]interface{}
-		json.Unmarshal(data, &payload)
-		fmt.Println(string(PrettyPrintJson(payload)))
+		g.handleResult(data)
 
 	default:
 		fmt.Println(header.Private)
@@ -250,16 +239,6 @@ func (g *Gox) handle(data []byte) {
 		fmt.Println(string(PrettyPrintJson(payload)))
 
 	}
-
-	// fmt.Printf("DATA: %s\n", header)
-
-	// if d := streamPayload.Depth; d != nil {
-	// 	g.Depth <- d
-	// } else if d := streamPayload.Ticker; d != nil {
-	// 	g.Ticker <- d
-	// } else if d := streamPayload.Info; d != nil {
-	// 	g.Info <- d
-	// }
 }
 
 func PrettyPrintJson(p interface{}) []byte {
