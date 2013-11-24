@@ -19,7 +19,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 )
 
 type StreamType string
@@ -47,10 +46,10 @@ type Gox struct {
 	secret []byte
 	conn   *websocket.Conn
 
-	Ticker chan *Ticker
+	Ticker chan *TickerPayload
 	Info   chan *Info
-	Depth  chan *Depth
-	Trades chan *Trade
+	Depth  chan *DepthPayload
+	Trades chan *TradePayload
 	Orders chan []Order
 	Errors chan error
 	done   chan bool
@@ -77,11 +76,26 @@ type StreamHeader struct {
 }
 
 // StreamPayload represents the basic structure of every message on the wire.
-type StreamPayload struct {
+// type StreamPayload struct {
+// 	StreamHeader
+// 	Ticker *Ticker `json:"ticker"`
+// 	Depth  *Depth  `json:"depth"`
+// 	Info   *Info   `json:"info"`
+// }
+
+type DepthPayload struct {
+	StreamHeader
+	Depth *Depth `json:"depth"`
+}
+
+type TickerPayload struct {
 	StreamHeader
 	Ticker *Ticker `json:"ticker"`
-	Depth  *Depth  `json:"depth"`
-	Info   *Info   `json:"info"`
+}
+
+type TradePayload struct {
+	StreamHeader
+	Trade *Trade `json:"trade"`
 }
 
 func New(key, secret string, currencies ...string) (*Gox, error) {
@@ -121,10 +135,10 @@ func New(key, secret string, currencies ...string) (*Gox, error) {
 func NewWithConnection(key, secret string, conn *websocket.Conn) (g *Gox, err error) {
 	g = &Gox{
 		conn:   conn,
-		Ticker: make(chan *Ticker, 1),
+		Ticker: make(chan *TickerPayload, 1),
 		Info:   make(chan *Info, 1),
-		Depth:  make(chan *Depth, 1),
-		Trades: make(chan *Trade, 1),
+		Depth:  make(chan *DepthPayload, 1),
+		Trades: make(chan *TradePayload, 1),
 		Orders: make(chan []Order, 1),
 		Errors: make(chan error, 10),
 		done:   make(chan bool, 1),
@@ -229,24 +243,56 @@ func (g *Gox) handle(data []byte) {
 	switch header.Private {
 	case "ticker":
 		fmt.Println("TICKER")
+
+		// var payload map[string]interface{}
+		// json.Unmarshal(data, &payload)
+		// fmt.Println(string(PrettyPrintJson(payload)))
+
 	case "debug":
 		fmt.Println("DEBUG")
 
-	case "order":
-		fmt.Println("ORDER")
+		var payload map[string]interface{}
+		json.Unmarshal(data, &payload)
+		fmt.Println(string(PrettyPrintJson(payload)))
+
+	case "result":
+		// Handle Order and other result data here
+		fmt.Println("RESULT")
+
+		var payload map[string]interface{}
+		json.Unmarshal(data, &payload)
+		fmt.Println(string(PrettyPrintJson(payload)))
 
 	case "trade":
 		fmt.Println("TRADE")
 
+		// var payload map[string]interface{}
+		// json.Unmarshal(data, &payload)
+		// fmt.Println(string(PrettyPrintJson(payload)))
+
 	case "depth":
-		fmt.Println("DEPTH")
+		var depthPayload DepthPayload
+		err := json.Unmarshal(data, &depthPayload)
+		if err != nil {
+			select {
+			case g.Errors <- err:
+			default:
+				// Ignore error if nothing is handling errors so we don't block
+			}
+		}
+		select {
+		case g.Depth <- &depthPayload:
+		default:
+		}
+
+	default:
+		fmt.Println(header.Private)
+
+		var payload map[string]interface{}
+		json.Unmarshal(data, &payload)
+		fmt.Println(string(PrettyPrintJson(payload)))
 
 	}
-
-	var payload StreamPayload
-	json.Unmarshal(data, &payload)
-
-	fmt.Println(string(PrettyPrintJson(payload)))
 
 	// fmt.Printf("DATA: %s\n", header)
 
@@ -281,16 +327,4 @@ func (g *Gox) call(endpoint string, params map[string]interface{}) error {
 	}
 
 	return g.authenticatedSend(msg)
-}
-
-// Dispatches a request for private/info, returning an info payload or timing out
-func (g *Gox) RequestInfo() *Info {
-	g.call("private/info", nil)
-
-	select {
-	case <-time.After(10 * time.Second):
-		return nil
-	case info := <-g.Info:
-		return info
-	}
 }
