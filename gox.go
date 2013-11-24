@@ -98,7 +98,7 @@ func New(key, secret string, currencies ...string) (*Gox, error) {
 		return nil, fmt.Errorf("Error connecting: %s", err.Error())
 	}
 
-	conn, _, err := websocket.NewClient(netConn, u, http.Header{"Origin": {originUrl}}, 256, 256)
+	conn, _, err := websocket.NewClient(netConn, u, http.Header{"Origin": {originUrl}}, 1024, 1024)
 	if err != nil {
 		return nil, fmt.Errorf("Opening websocket: %v", err)
 	}
@@ -202,12 +202,20 @@ func (g *Gox) authenticatedSend(msg map[string]interface{}) error {
 	fullReq := append(append(g.key, signedReq...), req...)
 	encodedReq := base64.StdEncoding.EncodeToString(fullReq)
 
-	return g.conn.WriteJSON(map[string]interface{}{
+	reqBody := map[string]interface{}{
 		"op":      "call",
 		"id":      requestId,
 		"call":    encodedReq,
 		"context": "mtgox.com",
-	})
+	}
+	reqJson, err := json.Marshal(&reqBody)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Req JSON: %s", reqJson)
+
+	return g.conn.WriteMessage(websocket.TextMessage, reqJson)
 }
 
 // Handler function for processing responses from mtgox
@@ -215,7 +223,7 @@ func (g *Gox) handle(data []byte) {
 	var header StreamHeader
 	json.Unmarshal(data, &header)
 
-	switch header.Private {
+	switch header.Op {
 	case "debug":
 		g.handleDebug(data)
 
