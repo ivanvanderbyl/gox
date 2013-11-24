@@ -1,6 +1,8 @@
 package gox
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -10,4 +12,20 @@ func timeFromUnixMicro(micro int64) time.Time {
 	nanos = int64(nanos % 1e9)
 
 	return time.Unix(seconds, nanos)
+}
+
+type EpochTime struct {
+	time.Time
+}
+
+func (t *EpochTime) UnmarshalJSON(b []byte) error {
+	nowInt, err := strconv.ParseInt(string(b), 10, 64)
+	if err != nil {
+		fmt.Printf("Unmarshal error: %s\n", err.Error())
+		return err
+	}
+
+	t.Time = timeFromUnixMicro(nowInt)
+
+	return nil
 }

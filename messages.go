@@ -1,39 +1,8 @@
 package gox
 
 import (
-	"strconv"
 	"time"
 )
-
-type Trade struct {
-	Type           string
-	Trade_type     string
-	Properties     string
-	Now            time.Time
-	Amount         float64
-	Amount_int     int64
-	Primary        string
-	Price          float64
-	Price_int      int64
-	Item           string
-	Price_currency string
-}
-
-type Ticker struct {
-	Volume       Value     `json:"vol"`
-	Instrument   string    `json:"item"`
-	High         Value     `json:"high"`          //Highest value
-	Low          Value     `json:"low"`           // Lowest Value
-	Last         Value     `json:"last"`          // == Last_local
-	LastLocal    Value     `json:"last_local"`    // Last trade in auxilary currency
-	LastAux      Value     `json:"last_aux"`      // Last trade converted to auxilary currency
-	LastOriginal Value     `json:"last_original"` // Last trade in any currency
-	Buy          Value     `json:"buy"`
-	Sell         Value     `json:"sell"`
-	VWAP         Value     `json:"vwap"` // Volume weighted average price
-	Avg          Value     `json:"avg"`  // Averaged price
-	Timestamp    EpochTime `json:"now,string"`
-}
 
 type Value struct {
 	Value        float64 `json:"value,string"`
@@ -86,23 +55,10 @@ type Order struct {
 	Actions          []string
 }
 
-type EpochTime struct {
-	time.Time
-}
-
 type SimpleTime struct {
 	time.Time
 }
 
-func (t *EpochTime) UnmarshalJSON(b []byte) error {
-	result, err := strconv.ParseInt(string(b), 0, 64)
-	if err != nil {
-		return err
-	}
-	// convert the unix epoch to a Time object
-	*t = EpochTime{time.Unix(0, result*1000)}
-	return nil
-}
 func (t *SimpleTime) UnmarshalJSON(b []byte) error {
 	layout := "2006-01-02 15:04:05"
 	time, err := time.Parse(layout, string(b))

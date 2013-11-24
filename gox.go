@@ -75,24 +75,6 @@ type StreamHeader struct {
 	Private     string `json:"private"`
 }
 
-// StreamPayload represents the basic structure of every message on the wire.
-// type StreamPayload struct {
-// 	StreamHeader
-// 	Ticker *Ticker `json:"ticker"`
-// 	Depth  *Depth  `json:"depth"`
-// 	Info   *Info   `json:"info"`
-// }
-
-type TickerPayload struct {
-	StreamHeader
-	Ticker *Ticker `json:"ticker"`
-}
-
-type TradePayload struct {
-	StreamHeader
-	Trade *Trade `json:"trade"`
-}
-
 func New(key, secret string, currencies ...string) (*Gox, error) {
 	var mtgoxUrl string
 	if secureConn {
@@ -236,21 +218,6 @@ func (g *Gox) handle(data []byte) {
 	json.Unmarshal(data, &header)
 
 	switch header.Private {
-	case "ticker":
-		var payload TickerPayload
-		err := json.Unmarshal(data, &payload)
-		if err != nil {
-			select {
-			case g.Errors <- err:
-			default:
-			}
-		}
-
-		select {
-		case g.Ticker <- &payload:
-		default:
-		}
-
 	case "debug":
 		fmt.Println("DEBUG")
 
@@ -258,19 +225,11 @@ func (g *Gox) handle(data []byte) {
 		json.Unmarshal(data, &payload)
 		fmt.Println(string(PrettyPrintJson(payload)))
 
+	case "ticker":
+		g.handleTicker(data)
+
 	case "trade":
-		var payload TradePayload
-		err := json.Unmarshal(data, &payload)
-		if err != nil {
-			select {
-			case g.Errors <- err:
-			default:
-			}
-		}
-		select {
-		case g.Trades <- &payload:
-		default:
-		}
+		g.handleTrade(data)
 
 	case "depth":
 		g.handleDepth(data)

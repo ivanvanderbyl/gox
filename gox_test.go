@@ -185,6 +185,7 @@ func TestHandleTickerData(t *testing.T) {
 		t.Error("Timed out waiting for ticker data")
 	case data := <-client.Ticker:
 		t.Logf("Received Tick: %v", data.Ticker.Instrument)
+		t.Logf("Tick timestamp: %v", data.Ticker.Timestamp)
 	}
 }
 
