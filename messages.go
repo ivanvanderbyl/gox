@@ -72,20 +72,6 @@ type Rate struct {
 	Rate float64
 }
 
-// Represents a Market Depth payload
-type Depth struct {
-	ActionId           int       `json:"type"`
-	Action             string    `json:"type_str"`
-	Volume             float64   `json:"volume,string"`
-	VolumeInteger      int64     `json:"volume_int,string"`
-	Timestamp          EpochTime `json:"now,string"`
-	Price              float64   `json:"price,string"`
-	PriceIneteger      int64     `json:"price_int,string"`
-	Instrument         string    `json:"item"`
-	Currency           string    `json:"currency"`
-	TotalVolumeInteger int64     `json:"total_volume_int,string"`
-}
-
 type Order struct {
 	Oid              string
 	Currency         string

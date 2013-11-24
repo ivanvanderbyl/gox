@@ -83,11 +83,6 @@ type StreamHeader struct {
 // 	Info   *Info   `json:"info"`
 // }
 
-type DepthPayload struct {
-	StreamHeader
-	Depth *Depth `json:"depth"`
-}
-
 type TickerPayload struct {
 	StreamHeader
 	Ticker *Ticker `json:"ticker"`
@@ -278,19 +273,7 @@ func (g *Gox) handle(data []byte) {
 		}
 
 	case "depth":
-		var depthPayload DepthPayload
-		err := json.Unmarshal(data, &depthPayload)
-		if err != nil {
-			select {
-			case g.Errors <- err:
-			default:
-				// Ignore error if nothing is handling errors so we don't block
-			}
-		}
-		select {
-		case g.Depth <- &depthPayload:
-		default:
-		}
+		g.handleDepth(data)
 
 	case "result":
 		// Handle Order and other result data here
