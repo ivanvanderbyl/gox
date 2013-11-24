@@ -242,11 +242,19 @@ func (g *Gox) handle(data []byte) {
 
 	switch header.Private {
 	case "ticker":
-		fmt.Println("TICKER")
+		var payload TickerPayload
+		err := json.Unmarshal(data, &payload)
+		if err != nil {
+			select {
+			case g.Errors <- err:
+			default:
+			}
+		}
 
-		// var payload map[string]interface{}
-		// json.Unmarshal(data, &payload)
-		// fmt.Println(string(PrettyPrintJson(payload)))
+		select {
+		case g.Ticker <- &payload:
+		default:
+		}
 
 	case "debug":
 		fmt.Println("DEBUG")
@@ -255,20 +263,19 @@ func (g *Gox) handle(data []byte) {
 		json.Unmarshal(data, &payload)
 		fmt.Println(string(PrettyPrintJson(payload)))
 
-	case "result":
-		// Handle Order and other result data here
-		fmt.Println("RESULT")
-
-		var payload map[string]interface{}
-		json.Unmarshal(data, &payload)
-		fmt.Println(string(PrettyPrintJson(payload)))
-
 	case "trade":
-		fmt.Println("TRADE")
-
-		// var payload map[string]interface{}
-		// json.Unmarshal(data, &payload)
-		// fmt.Println(string(PrettyPrintJson(payload)))
+		var payload TradePayload
+		err := json.Unmarshal(data, &payload)
+		if err != nil {
+			select {
+			case g.Errors <- err:
+			default:
+			}
+		}
+		select {
+		case g.Trades <- &payload:
+		default:
+		}
 
 	case "depth":
 		var depthPayload DepthPayload
@@ -284,6 +291,14 @@ func (g *Gox) handle(data []byte) {
 		case g.Depth <- &depthPayload:
 		default:
 		}
+
+	case "result":
+		// Handle Order and other result data here
+		fmt.Println("RESULT")
+
+		var payload map[string]interface{}
+		json.Unmarshal(data, &payload)
+		fmt.Println(string(PrettyPrintJson(payload)))
 
 	default:
 		fmt.Println(header.Private)

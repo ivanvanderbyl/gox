@@ -155,7 +155,7 @@ func TestHandleDepthData(t *testing.T) {
 	case <-time.After(100 * time.Millisecond):
 		t.Error("Timed out waiting for depth data")
 	case data := <-client.Depth:
-		t.Logf("Received Depth: %v", data)
+		t.Logf("Received Depth: %v", data.Depth.Instrument)
 	}
 }
 
@@ -170,19 +170,33 @@ func TestHandleDepthDataNonBlocking(t *testing.T) {
 	select {
 	case <-time.After(100 * time.Millisecond):
 		t.Error("Timed out waiting for depth data")
-	case data := <-client.Depth:
-		t.Logf("Received Depth: %v", data)
+	case <-client.Depth:
+		t.Logf("Received Depth")
 	}
 }
 
 func TestHandleTickerData(t *testing.T) {
 	client := newTestClient(t)
 
-	client.handle(tickerPayload)
+	go client.handle(tickerPayload)
+
+	select {
+	case <-time.After(100 * time.Millisecond):
+		t.Error("Timed out waiting for ticker data")
+	case data := <-client.Ticker:
+		t.Logf("Received Tick: %v", data.Ticker.Instrument)
+	}
 }
 
 func TestHandleTradeData(t *testing.T) {
 	client := newTestClient(t)
 
-	client.handle(tradePayload)
+	go client.handle(tradePayload)
+
+	select {
+	case <-time.After(100 * time.Millisecond):
+		t.Error("Timed out waiting for trade data")
+	case data := <-client.Trades:
+		t.Logf("Received Tick: %v", data.Trade.Amount)
+	}
 }
