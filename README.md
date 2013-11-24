@@ -9,10 +9,10 @@ Basic usage requires an API token from your Mt.Gox account.
 ```go
 client, err := gox.New( "KEY", "SECRET", "AUD", "USD")
 if err != nil {
-  # Handle connection error
+  // Handle connection error
 }
 
-# Start message receive routine
+// Start message receive routine
 client.Start()
 
 
