@@ -2,6 +2,10 @@
 
 Mt.Client Streaming API implementation in Go.
 
+### Documentation
+
+* [Reference](http://godoc.org/github.com/ivanvanderbyl/mtgox)
+
 ## Usage
 
 Basic usage requires an API token from your Mt.Client account.
