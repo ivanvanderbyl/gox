@@ -23,5 +23,4 @@
   From here all messages will be sent to their respective channels.
 
 */
-
 package mtgox
