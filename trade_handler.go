@@ -1,4 +1,4 @@
-package gox
+package mtgox
 
 import (
 	"encoding/json"
@@ -72,7 +72,7 @@ func (t *Trade) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
-func (g *Gox) handleTrade(data []byte) {
+func (g *Client) handleTrade(data []byte) {
 	var payload TradePayload
 	err := json.Unmarshal(data, &payload)
 	if err != nil {

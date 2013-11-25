@@ -1,4 +1,4 @@
-package gox
+package mtgox
 
 import (
 	"testing"
@@ -138,7 +138,7 @@ var tradePayload = []byte(`{
   }
 }`)
 
-func newTestClient(t *testing.T) *Gox {
+func newTestClient(t *testing.T) *Client {
 	client, err := NewWithConnection("123abcde-4567-8910-1112-74e2ef79f40d", "VE9QU0VDUkVU", nil)
 	if err != nil {
 		t.Error(err.Error())

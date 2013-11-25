@@ -1,4 +1,4 @@
-package gox
+package mtgox
 
 /*
 Depth payload handler
@@ -88,7 +88,7 @@ func (d *Depth) UnmarshalJSON(data []byte) error {
 }
 
 // Handles a depth payload
-func (g *Gox) handleDepth(data []byte) {
+func (g *Client) handleDepth(data []byte) {
 	var depthPayload DepthPayload
 	err := json.Unmarshal(data, &depthPayload)
 	if err != nil {

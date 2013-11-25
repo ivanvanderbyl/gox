@@ -1,13 +1,13 @@
-# Gox
+# MtGox API Client
 
-Mt.Gox Streaming API implementation in Go.
+Mt.Client Streaming API implementation in Go.
 
 ## Usage
 
-Basic usage requires an API token from your Mt.Gox account.
+Basic usage requires an API token from your Mt.Client account.
 
 ```go
-client, err := gox.New( "KEY", "SECRET", "AUD", "USD")
+client, err := mtgox.New( "KEY", "SECRET", "AUD", "USD")
 if err != nil {
   // Handle connection error
 }

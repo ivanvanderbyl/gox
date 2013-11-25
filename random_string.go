@@ -1,4 +1,4 @@
-package gox
+package mtgox
 
 import (
 	"crypto/sha1"

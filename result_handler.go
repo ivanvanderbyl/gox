@@ -1,11 +1,16 @@
-package gox
+package mtgox
 
 import (
 	"encoding/json"
 	"fmt"
 )
 
-func (g *Gox) handleResult(data []byte) {
+type ResultHeader struct {
+	Id string `json:"id"`
+	Op string `json:"op"`
+}
+
+func (g *Client) handleResult(data []byte) {
 	// Handle Order and other result data here
 	fmt.Println("RESULT")
 
@@ -14,7 +19,7 @@ func (g *Gox) handleResult(data []byte) {
 	fmt.Println(string(PrettyPrintJson(payload)))
 }
 
-func (g *Gox) handleDebug(data []byte) {
+func (g *Client) handleDebug(data []byte) {
 	var payload map[string]interface{}
 	json.Unmarshal(data, &payload)
 	fmt.Printf("DEBUG:\n%s\n", PrettyPrintJson(payload))

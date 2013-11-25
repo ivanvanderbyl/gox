@@ -1,7 +1,7 @@
-package gox
+package mtgox
 
 /*
-  Package gox provides a streaming implementation of Mt. Gox's bitcoin trading API
+  package mtgox provides a streaming implementation of Mt. Client's bitcoin trading API
   built on the Gorilla Websocket library
 */
 
@@ -21,9 +21,6 @@ import (
 	"strings"
 )
 
-type StreamType string
-type OrderType string
-
 const (
 	secureApiHost string = "wss://websocket.mtgox.com:443"
 	apiHost       string = "ws://websocket.mtgox.com:80"
@@ -31,15 +28,14 @@ const (
 	httpEndpoint  string = "http://mtgox.com/api/2"
 	originUrl     string = "http://websocket.mtgox.com"
 
-	BID OrderType = "bid"
-	ASK OrderType = "ask"
+	// TODO: Move this into Config
+	secureConn bool = true
 
-	secureConn bool = false
-
+	// Current bitcoin devision from integer
 	BitcoinDivision = 1e8
 )
 
-type Gox struct {
+type Client struct {
 	key    []byte
 	secret []byte
 	conn   *websocket.Conn
@@ -73,7 +69,7 @@ type StreamHeader struct {
 	Private     string `json:"private"`
 }
 
-func New(key, secret string, currencies ...string) (*Gox, error) {
+func New(key, secret string, currencies ...string) (*Client, error) {
 	var mtgoxUrl string
 	if secureConn {
 		mtgoxUrl = fmt.Sprintf("%s%s?Currency=%s", secureApiHost, apiPath, strings.Join(currencies, ","))
@@ -107,8 +103,8 @@ func New(key, secret string, currencies ...string) (*Gox, error) {
 }
 
 // Constructs a new client using an existing connection, useful for testing
-func NewWithConnection(key, secret string, conn *websocket.Conn) (g *Gox, err error) {
-	g = &Gox{
+func NewWithConnection(key, secret string, conn *websocket.Conn) (g *Client, err error) {
+	g = &Client{
 		conn:   conn,
 		Ticker: make(chan *TickerPayload, 1),
 		Info:   make(chan *Info, 1),
@@ -132,7 +128,7 @@ func NewWithConnection(key, secret string, conn *websocket.Conn) (g *Gox, err er
 	return g, nil
 }
 
-func (g *Gox) Start() {
+func (g *Client) Start() {
 	go func() {
 		for p := range g.messages() {
 			g.handle(p)
@@ -140,17 +136,17 @@ func (g *Gox) Start() {
 	}()
 }
 
-func (g *Gox) Close() {
+func (g *Client) Close() {
 	g.done <- true
 }
 
 // Returns the raw websocket connection
-func (g *Gox) Conn() *websocket.Conn {
+func (g *Client) Conn() *websocket.Conn {
 	return g.conn
 }
 
 // Reads messages into a channel so we can select on them later
-func (g *Gox) messages() <-chan []byte {
+func (g *Client) messages() <-chan []byte {
 	msgs := make(chan []byte, 10)
 
 	go func(msgs chan []byte) {
@@ -172,7 +168,7 @@ func (g *Gox) messages() <-chan []byte {
 	return msgs
 }
 
-func (g *Gox) sign(body []byte) ([]byte, error) {
+func (g *Client) sign(body []byte) ([]byte, error) {
 	mac := hmac.New(sha512.New, g.secret)
 	_, err := mac.Write(body)
 	if err != nil {
@@ -182,7 +178,7 @@ func (g *Gox) sign(body []byte) ([]byte, error) {
 	return mac.Sum(nil), nil
 }
 
-func (g *Gox) authenticatedSend(msg map[string]interface{}) error {
+func (g *Client) authenticatedSend(msg map[string]interface{}) error {
 	if g.key == nil || g.secret == nil {
 		return errors.New("API Key or secret is invalid or missing.")
 	}
@@ -219,7 +215,7 @@ func (g *Gox) authenticatedSend(msg map[string]interface{}) error {
 }
 
 // Handler function for processing responses from mtgox
-func (g *Gox) handle(data []byte) {
+func (g *Client) handle(data []byte) {
 	var header StreamHeader
 	json.Unmarshal(data, &header)
 
@@ -257,7 +253,7 @@ func PrettyPrintJson(p interface{}) []byte {
 	return formattedJson
 }
 
-func (g *Gox) call(endpoint string, params map[string]interface{}) error {
+func (g *Client) call(endpoint string, params map[string]interface{}) error {
 	if params == nil {
 		params = make(map[string]interface{})
 	}

@@ -1,11 +1,11 @@
-package gox
+package mtgox
 
 import (
 	"time"
 )
 
 // Dispatches a request for private/info, returning an info payload or timing out
-func (g *Gox) RequestInfo() *Info {
+func (g *Client) RequestInfo() *Info {
 	g.call("private/info", nil)
 
 	select {
@@ -21,7 +21,7 @@ func (g *Gox) RequestInfo() *Info {
 // 	return api.Orders
 // }
 
-// func (g *Gox) RequestOrders() []Order {
+// func (g *Client) RequestOrders() []Order {
 // 	g.call("private/orders", nil)
 
 // 	select {
@@ -32,6 +32,6 @@ func (g *Gox) RequestInfo() *Info {
 // 	}
 // }
 
-func (g *Gox) RequestOrders() {
+func (g *Client) RequestOrders() {
 	g.call("private/orders", nil)
 }

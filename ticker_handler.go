@@ -1,4 +1,4 @@
-package gox
+package mtgox
 
 import (
 	"encoding/json"
@@ -59,7 +59,7 @@ type TickerPayload struct {
 	Ticker Ticker `json:"ticker"`
 }
 
-func (g *Gox) handleTicker(data []byte) {
+func (g *Client) handleTicker(data []byte) {
 	var payload TickerPayload
 	err := json.Unmarshal(data, &payload)
 	if err != nil {
