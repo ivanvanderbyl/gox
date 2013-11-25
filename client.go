@@ -31,10 +31,11 @@ const (
 	// TODO: Move this into Config
 	secureConn bool = true
 
-	// Current bitcoin devision from integer
+	// BitcoinDivision represents the current integer division of 1 bitcoin.
 	BitcoinDivision = 1e8
 )
 
+// Client represents the public type for interacing with the MtGox streaming API.
 type Client struct {
 	key    []byte
 	secret []byte
@@ -49,6 +50,7 @@ type Client struct {
 	done   chan bool
 }
 
+// Config represents a configuration type to be used when configuring the Client.
 type Config struct {
 	Currencies []string
 	Key        string
@@ -61,6 +63,8 @@ type payload struct {
 	data        []byte
 }
 
+// StreamHeader represents the header of a payload message from MtGox before
+// being parsed.
 type StreamHeader struct {
 	Channel     string `json:"channel"`
 	ChannelName string `json:"channel_name"`
@@ -69,6 +73,7 @@ type StreamHeader struct {
 	Private     string `json:"private"`
 }
 
+// New constructs a new instance of Client, returning an error
 func New(key, secret string, currencies ...string) (*Client, error) {
 	var mtgoxUrl string
 	if secureConn {
@@ -102,7 +107,7 @@ func New(key, secret string, currencies ...string) (*Client, error) {
 	return NewWithConnection(key, secret, conn)
 }
 
-// Constructs a new client using an existing connection, useful for testing
+// NewWithConnection constructs a new client using an existing connection, useful for testing
 func NewWithConnection(key, secret string, conn *websocket.Conn) (g *Client, err error) {
 	g = &Client{
 		conn:   conn,
