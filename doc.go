@@ -12,6 +12,16 @@
   a Client instance, you should call client.Start to begin handling received
   messages.
 
+    client, err := mtgox.New( "KEY", "SECRET", "Currencies"...)
+    if err != nil {
+      // Handle connection error
+    }
+
+    // Start message receive routine
+    client.Start()
+
+  From here all messages will be sent to their respective channels.
+
 */
 
 package mtgox
