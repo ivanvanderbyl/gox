@@ -8,75 +8,123 @@ import (
 
 // Order represents a market order from your account.
 type Order struct {
-	OrderId         string    `json:"oid"`
-	Currency        string    `json:"currency"`
-	Instrument      string    `json:"item"`
-	OrderType       string    `json:"type"`
-	Amount          float64   `json:"amount"`
-	EffectiveAmount float64   `json:"effective_amount"`
-	InvalidAmount   float64   `json:"invalid_amount"`
-	Price           float64   `json:"price"`
-	Status          string    `json:"status"`
-	Date            time.Time `json:"date,string"`
-	Priority        uint64    `json:"priority"`
+	// OrderId is the unique order identifier
+	OrderId string `json:"oid,string"`
+
+	// Currency represents the external fiat currency
+	Currency string `json:"currency,string"`
+
+	// Instrument is the object being traded
+	Instrument string `json:"item,string"`
+
+	// OrderType in the market, one of `bid` or `ask`
+	OrderType string `json:"type,string"`
+
+	// Amount is the requested trade amount in BTC
+	Amount float64 `json:"amount"`
+
+	// EffectiveAmount is the actual amount traded in BTC
+	EffectiveAmount float64 `json:"effective_amount"`
+
+	// InvalidAmount is the amount which could not traded in BTC
+	InvalidAmount float64 `json:"invalid_amount"`
+
+	// Price is the amount paid in fiat currency
+	Price float64 `json:"price"`
+
+	// Status is the current status of the order
+	Status string `json:"status,string"`
+
+	// Timestamp of the order taking place
+	Timestamp time.Time `json:"date,string"`
+
+	// Priority is a unique microsecond timestamp of the order
+	// (Not sure what the actual use of this is)
+	Priority uint64 `json:"priority,string"`
 }
 
 func (o *Order) UnmarshalJSON(data []byte) error {
-	var raw map[string]string
+	var raw map[string]interface{}
 	err := json.Unmarshal(data, &raw)
 	if err != nil {
 		return err
 	}
 
 	for k, v := range raw {
-		switch k {
-		case "oid":
-			o.OrderId = v
-		case "currency":
-			o.Currency = v
-		case "item":
-			o.Instrument = v
-		case "type":
-			o.OrderType = v
-		case "status":
-			o.Status = string(v)
-		case "priority":
-			o.Priority, err = strconv.ParseUint(v, 10, 64)
-			if err != nil {
-				return err
+		switch vv := v.(type) {
+		case string:
+			switch k {
+			case "oid":
+				o.OrderId = vv
+			case "currency":
+				o.Currency = vv
+			case "item":
+				o.Instrument = vv
+			case "type":
+				o.OrderType = vv
+			case "status":
+				o.Status = vv
+			case "priority":
+				o.Priority, err = strconv.ParseUint(vv, 10, 64)
+				if err != nil {
+					return err
+				}
 			}
-		case "amount":
-			var value Value
-			err = json.Unmarshal([]byte(v), &value)
-			if err != nil {
-				return err
+		case map[string]interface{}:
+			switch k {
+			case "amount":
+				if val, ok := vv["value_int"].(string); ok {
+					valFloat, err := strconv.ParseFloat(val, 64)
+					if err != nil {
+						return err
+					}
+					if currency, ok := vv["currency"].(string); ok {
+						o.Amount = valFloat / currencyDivisions[currency]
+					}
+				}
+
+			case "effective_amount":
+				if val, ok := vv["value_int"].(string); ok {
+					valFloat, err := strconv.ParseFloat(val, 64)
+					if err != nil {
+						return err
+					}
+					if currency, ok := vv["currency"].(string); ok {
+						o.EffectiveAmount = valFloat / currencyDivisions[currency]
+					}
+				}
+
+			case "invalid_amount":
+				if val, ok := vv["value_int"].(string); ok {
+					valFloat, err := strconv.ParseFloat(val, 64)
+					if err != nil {
+						return err
+					}
+					if currency, ok := vv["currency"].(string); ok {
+						o.InvalidAmount = valFloat / currencyDivisions[currency]
+					}
+				}
+
+			case "price":
+				if val, ok := vv["value_int"].(string); ok {
+					valFloat, err := strconv.ParseFloat(val, 64)
+					if err != nil {
+						return err
+					}
+
+					if currency, ok := vv["currency"].(string); ok {
+						o.Price = valFloat / currencyDivisions[currency]
+					}
+				}
 			}
 
-			o.Amount = value.Value
-		case "effective_amount":
-			var value Value
-			err = json.Unmarshal([]byte(v), &value)
-			if err != nil {
-				return err
+		case float64:
+			switch k {
+			case "date":
+				o.Timestamp = time.Unix(int64(vv), 0)
 			}
-
-			o.EffectiveAmount = value.Value
-		case "invalid_amount":
-			var value Value
-			err = json.Unmarshal([]byte(v), &value)
-			if err != nil {
-				return err
-			}
-
-			o.InvalidAmount = value.Value
-		case "price":
-			var value Value
-			err = json.Unmarshal([]byte(v), &value)
-			if err != nil {
-				return err
-			}
-
-			o.Price = value.Value
+			// default:
+			// fmt.Printf("Got unknown type: %v\n", vv)
 		}
 	}
 

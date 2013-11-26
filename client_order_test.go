@@ -50,15 +50,67 @@ var orderPayload = []byte(`{
   ]
 }`)
 
-func TestHandleResultDataFromOrderRequest(t *testing.T) {
+func TestOrderPayloadUnmarshal(t *testing.T) {
 	client := newTestClient(t)
 
-	go client.handle(orderPayload)
+	orders, err := client.processOrderResult(orderPayload)
+	if err != nil {
+		t.Error(err.Error())
+	}
 
-	select {
-	case <-time.After(100 * time.Millisecond):
-		t.Error("Timed out waiting for depth data")
-	case orders := <-client.Orders:
-		t.Logf("Received: %v", orders)
+	if len(orders) == 0 {
+		t.Error("Expected orders, not none")
+	}
+
+	valueExpectations := []struct {
+		Prop     string
+		Expected float64
+		Actual   float64
+	}{
+		{"Amount", 0.01, orders[0].Amount},
+		{"EffectiveAmount", 0.00998098, orders[0].EffectiveAmount},
+		{"InvalidAmount", 0.00001902, orders[0].InvalidAmount},
+		{"Price", 923.0, orders[0].Price},
+	}
+
+	for _, e := range valueExpectations {
+		if e.Expected != e.Actual {
+			t.Errorf("Failed to parse %s property. Got %v != %v", e.Prop, e.Expected, e.Actual)
+		}
+	}
+
+	stringExpectations := []struct {
+		Prop     string
+		Expected string
+		Actual   string
+	}{
+		{"Status", "open", orders[0].Status},
+		{"Currency", "AUD", orders[0].Currency},
+		{"Instrument", "BTC", orders[0].Instrument},
+		{"OrderType", "ask", orders[0].OrderType},
+		{"OrderId", "bc1fb5dc-450e-438e-a80b-96cdaf6ba86c", orders[0].OrderId},
+	}
+
+	for _, e := range stringExpectations {
+		if e.Expected != e.Actual {
+			t.Errorf("Failed to parse %s property. Got %v != %v", e.Prop, e.Expected, e.Actual)
+		}
+	}
+
+	if expected, actual := time.Unix(1.385257384e+09, 0), orders[0].Timestamp; expected != actual {
+		t.Errorf("Failed to parse Timestamp property. Got %v", actual)
 	}
 }
+
+// func TestHandleResultDataFromOrderRequest(t *testing.T) {
+// 	client := newTestClient(t)
+
+// 	go client.handle(orderPayload)
+
+// 	select {
+// 	case <-time.After(100 * time.Millisecond):
+// 		t.Error("Timed out waiting for depth data")
+// 	case orders := <-client.Orders:
+// 		t.Logf("Received: %v", orders)
+// 	}
+// }

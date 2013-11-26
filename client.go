@@ -35,6 +35,27 @@ const (
 	BitcoinDivision = 1e8
 )
 
+var (
+	currencyDivisions = map[string]float64{
+		"BTC": BitcoinDivision,
+		"USD": 1e5,
+		"GBP": 1e5,
+		"EUR": 1e5,
+		"JPY": 1e3,
+		"AUD": 1e5,
+		"CAD": 1e5,
+		"CHF": 1e5,
+		"CNY": 1e5,
+		"DKK": 1e5,
+		"HKD": 1e5,
+		"PLN": 1e5,
+		"RUB": 1e5,
+		"SEK": 1e3,
+		"SGD": 1e5,
+		"THB": 1e5,
+	}
+)
+
 type ErrorHandlerFunc func(error)
 
 // Client represents the public type for interacing with the MtGox streaming API.
