@@ -35,6 +35,8 @@ const (
 	BitcoinDivision = 1e8
 )
 
+type ErrorHandlerFunc func(error)
+
 // Client represents the public type for interacing with the MtGox streaming API.
 type Client struct {
 	key    []byte
@@ -46,8 +48,16 @@ type Client struct {
 	Depth  chan *DepthPayload
 	Trades chan *TradePayload
 	Orders chan []Order
-	Errors chan error
+	errors chan error
 	done   chan bool
+
+	errHandler ErrorHandlerFunc
+
+	requestListeners map[string]chan []byte
+}
+
+func (Client) New() *Client {
+	return new(Client)
 }
 
 // Config represents a configuration type to be used when configuring the Client.
@@ -110,14 +120,15 @@ func New(key, secret string, currencies ...string) (*Client, error) {
 // NewWithConnection constructs a new client using an existing connection, useful for testing
 func NewWithConnection(key, secret string, conn *websocket.Conn) (g *Client, err error) {
 	g = &Client{
-		conn:   conn,
-		Ticker: make(chan *TickerPayload, 1),
-		Info:   make(chan *Info, 1),
-		Depth:  make(chan *DepthPayload, 1),
-		Trades: make(chan *TradePayload, 1),
-		Orders: make(chan []Order, 1),
-		Errors: make(chan error, 10),
-		done:   make(chan bool, 1),
+		conn:             conn,
+		Ticker:           make(chan *TickerPayload, 1),
+		Info:             make(chan *Info, 1),
+		Depth:            make(chan *DepthPayload, 1),
+		Trades:           make(chan *TradePayload, 1),
+		Orders:           make(chan []Order, 1),
+		errors:           make(chan error, 1),
+		done:             make(chan bool, 1),
+		requestListeners: make(map[string]chan []byte),
 	}
 
 	g.key, err = hex.DecodeString(strings.Replace(key, "-", "", -1))
@@ -133,10 +144,21 @@ func NewWithConnection(key, secret string, conn *websocket.Conn) (g *Client, err
 	return g, nil
 }
 
+// Start begins the internal routines for processing messages and errors
 func (g *Client) Start() {
+	// Handle incoming messages
 	go func() {
 		for p := range g.messages() {
 			g.handle(p)
+		}
+	}()
+
+	// Handle errors
+	go func() {
+		for err := range g.errors {
+			if g.errHandler != nil {
+				g.errHandler(err)
+			}
 		}
 	}()
 }
@@ -158,14 +180,14 @@ func (g *Client) messages() <-chan []byte {
 		for {
 			messageType, data, err := g.conn.ReadMessage()
 			if err != nil {
-				g.Errors <- err
+				g.errors <- err
 				break
 			}
 
 			if messageType == websocket.TextMessage {
 				msgs <- data
 			} else {
-				g.Errors <- fmt.Errorf("Received unknown message type: %d", messageType)
+				g.errors <- fmt.Errorf("Received unknown message type: %d", messageType)
 			}
 		}
 	}(msgs)
@@ -209,14 +231,13 @@ func (g *Client) authenticatedSend(msg map[string]interface{}) error {
 		"call":    encodedReq,
 		"context": "mtgox.com",
 	}
-	reqJson, err := json.Marshal(&reqBody)
+
+	reqJSON, err := json.Marshal(&reqBody)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Req JSON: %s", reqJson)
-
-	return g.conn.WriteMessage(websocket.TextMessage, reqJson)
+	return g.conn.WriteMessage(websocket.TextMessage, reqJSON)
 }
 
 // Handler function for processing responses from mtgox
@@ -224,7 +245,7 @@ func (g *Client) handle(data []byte) {
 	var header StreamHeader
 	json.Unmarshal(data, &header)
 
-	switch header.Op {
+	switch header.Private {
 	case "debug":
 		g.handleDebug(data)
 
@@ -237,16 +258,16 @@ func (g *Client) handle(data []byte) {
 	case "depth":
 		g.handleDepth(data)
 
-	case "result":
-		g.handleResult(data)
-
 	default:
-		fmt.Println(header.Private)
+		if header.Op == "result" {
+			g.handleResult(data)
+		} else {
+			fmt.Printf("HANDLE: %v\n", header.Op)
 
-		var payload map[string]interface{}
-		json.Unmarshal(data, &payload)
-		fmt.Println(string(PrettyPrintJson(payload)))
-
+			var payload map[string]interface{}
+			json.Unmarshal(data, &payload)
+			fmt.Println(string(PrettyPrintJson(payload)))
+		}
 	}
 }
 
@@ -258,18 +279,24 @@ func PrettyPrintJson(p interface{}) []byte {
 	return formattedJson
 }
 
-func (g *Client) call(endpoint string, params map[string]interface{}) error {
+func (g *Client) call(endpoint string, params map[string]interface{}) (string, error) {
 	if params == nil {
 		params = make(map[string]interface{})
 	}
+
+	id := <-ids
 
 	msg := map[string]interface{}{
 		"call":   endpoint,
 		"item":   "BTC",
 		"params": params,
-		"id":     <-ids,
+		"id":     id,
 		"nonce":  <-nonces,
 	}
 
-	return g.authenticatedSend(msg)
+	return id, g.authenticatedSend(msg)
+}
+
+func (c *Client) enqueuePendingRequest(id string, ch chan []byte) {
+	c.requestListeners[id] = ch
 }

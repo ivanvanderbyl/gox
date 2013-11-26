@@ -35,3 +35,21 @@ func (g *Client) RequestInfo() *Info {
 func (g *Client) RequestOrders() {
 	g.call("private/orders", nil)
 }
+
+// RequestOrderLag returns the lag time for executing orders
+func (g *Client) RequestOrderLag() (time.Duration, error) {
+	reqId, err := g.call("order/lag", nil)
+	if err != nil {
+		return 0, nil
+	}
+
+	replyChan := make(chan []byte, 1)
+	g.enqueuePendingRequest(reqId, replyChan)
+
+	select {
+	case <-time.After(10 * time.Second):
+		return 0, nil
+	case lagData := <-replyChan:
+		return g.processLagResult(lagData)
+	}
+}

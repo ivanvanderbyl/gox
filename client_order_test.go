@@ -53,7 +53,7 @@ var orderPayload = []byte(`{
 func TestHandleResultDataFromOrderRequest(t *testing.T) {
 	client := newTestClient(t)
 
-	go client.handle(depthPayload)
+	go client.handle(orderPayload)
 
 	select {
 	case <-time.After(100 * time.Millisecond):

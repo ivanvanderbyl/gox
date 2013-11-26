@@ -1,6 +1,6 @@
 # MtGox API Client
 
-Mt.Client Streaming API implementation in Go.
+Mt.Gox Streaming API implementation in Go.
 
 ### Documentation
 
@@ -8,7 +8,7 @@ Mt.Client Streaming API implementation in Go.
 
 ## Usage
 
-Basic usage requires an API token from your Mt.Client account.
+Basic usage requires an API token from your Mt.Gox account.
 
 ```go
 client, err := mtgox.New( "KEY", "SECRET", "AUD", "USD")
@@ -18,7 +18,6 @@ if err != nil {
 
 // Start message receive routine
 client.Start()
-
 
 for {
   select {
@@ -33,10 +32,6 @@ for {
 
   case depth := <-client.Depth:
     fmt.Printf("Depth: %s\n", PrettyPrintJson(depth))
-
-  case err := <-client.Errors:
-    fmt.Printf("ERROR: %s\n", err.Error())
-    return
   }
 }
 ```
