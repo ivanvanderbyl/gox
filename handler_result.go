@@ -55,5 +55,5 @@ func (c *Client) processLagResult(data []byte) (time.Duration, error) {
 		return time.Duration(0), nil
 	}
 
-	return time.Duration(lag.Lag), nil
+	return time.Duration(lag.Lag) * time.Microsecond, nil
 }

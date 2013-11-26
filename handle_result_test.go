@@ -2,6 +2,7 @@ package mtgox
 
 import (
 	"testing"
+	"time"
 )
 
 var lagPayload = []byte(`
@@ -24,7 +25,7 @@ func TestProcessLagResult(t *testing.T) {
 		t.Error(err.Error())
 	}
 
-	if lag != 2.26162e+06 {
-		t.Errorf("Expected lag to = %v, got %v", 2.26162e+06, lag)
+	if expected := time.Microsecond * 2.26162e+06; lag != expected {
+		t.Errorf("Expected lag to = %v, got %v", expected, lag)
 	}
 }
