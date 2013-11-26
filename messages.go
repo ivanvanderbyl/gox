@@ -41,11 +41,12 @@ type Rate struct {
 	Rate float64
 }
 
+// Order represents a market order from your account.
 type Order struct {
-	Oid              string
-	Currency         string
-	Item             string
-	Type             string
+	OrderId          string `json:"oid"`
+	Currency         string `json:"currency"`
+	Instrument       string `json:"item"`
+	OrderType        string `json:"type"`
 	Amount           Value
 	Effective_amount Value
 	Price            Value
