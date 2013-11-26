@@ -38,6 +38,22 @@ func (g *Client) handleDebug(data []byte) {
 	fmt.Printf("DEBUG:\n%s\n", PrettyPrintJson(payload))
 }
 
+func (c *Client) processOrderResult(data []byte) ([]Order, error) {
+	var p ResultPayload
+	err := json.Unmarshal(data, &p)
+	if err != nil {
+		return []Order{}, err
+	}
+
+	var orders []Order
+	err = json.Unmarshal(p.Result, &orders)
+	if err != nil {
+		return []Order{}, err
+	}
+
+	return orders, nil
+}
+
 type lagResult struct {
 	Lag float64 `json:"lag"`
 }

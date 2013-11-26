@@ -1,6 +1,7 @@
 package mtgox
 
 import (
+	"errors"
 	"time"
 )
 
@@ -32,11 +33,32 @@ func (g *Client) RequestInfo() *Info {
 // 	}
 // }
 
-func (g *Client) RequestOrders() {
-	g.call("private/orders", nil)
+func (g *Client) RequestOrders() (<-chan []Order, error) {
+	reqId, err := g.call("private/orders", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	normalisedReplyChan := make(chan []Order)
+	go func() {
+		replyChan := make(chan []byte, 1)
+		defer close(replyChan)
+		g.enqueuePendingRequest(reqId, replyChan)
+		data := <-replyChan
+		result, err := g.processOrderResult(data)
+
+		if err != nil {
+			return
+		}
+
+		normalisedReplyChan <- result
+	}()
+
+	return normalisedReplyChan, nil
 }
 
 // RequestOrderLag returns the lag time for executing orders
+// This method will block for up to 5 seconds before timing out
 func (g *Client) RequestOrderLag() (time.Duration, error) {
 	reqId, err := g.call("order/lag", nil)
 	if err != nil {
@@ -47,9 +69,10 @@ func (g *Client) RequestOrderLag() (time.Duration, error) {
 	g.enqueuePendingRequest(reqId, replyChan)
 
 	select {
-	case <-time.After(10 * time.Second):
-		return 0, nil
+	case <-time.After(5 * time.Second):
+		return 0, errors.New("Failed to receive lag response within 5 seconds")
 	case lagData := <-replyChan:
+		close(replyChan)
 		return g.processLagResult(lagData)
 	}
 }
