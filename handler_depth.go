@@ -3,7 +3,7 @@ package mtgox
 /*
 Depth payload handler
 
-Some code taken from https://github.com/ryanslade/mtgox/
+Some code borrowed from https://github.com/ryanslade/mtgox/
 */
 
 import (
@@ -12,15 +12,16 @@ import (
 	"time"
 )
 
+// DepthPayload represents a payload structure for market depth
 type DepthPayload struct {
 	StreamHeader
 	Depth Depth `json:"depth"`
 }
 
-// Represents a Market Depth payload
+// Depth represents market order depth
 type Depth struct {
-	// Ask or Bid
-	TypeString string
+	// Ask or Bid - Corresponds to the Order type
+	OrderType string
 
 	// The price at which volume change happened
 	Price int64
@@ -41,6 +42,7 @@ type Depth struct {
 	Timestamp time.Time
 }
 
+// UnmarshalJSON handles unmarshalling custom payload from Mt.Gox
 func (d *Depth) UnmarshalJSON(data []byte) error {
 	var raw map[string]interface{}
 
@@ -54,7 +56,7 @@ func (d *Depth) UnmarshalJSON(data []byte) error {
 		case string:
 			switch k {
 			case "type_str":
-				d.TypeString = vv
+				d.OrderType = vv
 			case "price_int":
 				d.Price, err = strconv.ParseInt(vv, 10, 64)
 				if err != nil {
@@ -93,7 +95,7 @@ func (g *Client) handleDepth(data []byte) {
 	err := json.Unmarshal(data, &depthPayload)
 	if err != nil {
 		select {
-		case g.Errors <- err:
+		case g.errors <- err:
 		default:
 			// Ignore error if nothing is handling errors so we don't block
 		}

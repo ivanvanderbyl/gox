@@ -64,7 +64,7 @@ func (g *Client) handleTicker(data []byte) {
 	err := json.Unmarshal(data, &payload)
 	if err != nil {
 		select {
-		case g.Errors <- err:
+		case g.errors <- err:
 		default:
 		}
 	}
