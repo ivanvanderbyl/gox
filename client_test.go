@@ -1,6 +1,7 @@
 package mtgox
 
 import (
+	"errors"
 	"testing"
 	"time"
 )
@@ -199,5 +200,28 @@ func TestHandleTradeData(t *testing.T) {
 		t.Error("Timed out waiting for trade data")
 	case data := <-client.Trades:
 		t.Logf("Received Tick: %v", data.Trade.Amount)
+	}
+}
+
+func TestErrorHandling(t *testing.T) {
+	client := newTestClient(t)
+	client.startErrorHandler()
+
+	gotError := make(chan bool)
+
+	client.SetErrorHandler(func(err error) {
+		t.Logf("Got Error: %s", err.Error())
+		gotError <- true
+	})
+
+	go func() {
+		client.errors <- errors.New("Test Error")
+	}()
+
+	select {
+	case <-gotError:
+		t.Log("Received Error OK")
+	case <-time.After(100 * time.Millisecond):
+		t.Error("Timed out waiting for error handler to fire")
 	}
 }

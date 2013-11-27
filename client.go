@@ -162,6 +162,10 @@ func NewWithConnection(key, secret string, conn *websocket.Conn) (g *Client, err
 	return g, nil
 }
 
+func (c *Client) SetErrorHandler(handlerFunc ErrorHandlerFunc) {
+	c.errHandler = handlerFunc
+}
+
 // Start begins the internal routines for processing messages and errors
 func (g *Client) Start() {
 	// Handle incoming messages
@@ -171,6 +175,10 @@ func (g *Client) Start() {
 		}
 	}()
 
+	g.startErrorHandler()
+}
+
+func (g *Client) startErrorHandler() {
 	// Handle errors
 	go func() {
 		for err := range g.errors {
