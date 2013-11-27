@@ -22,11 +22,11 @@ import (
 )
 
 const (
-	secureApiHost string = "wss://websocket.mtgox.com:443"
+	secureAPIHost string = "wss://websocket.mtgox.com:443"
 	apiHost       string = "ws://websocket.mtgox.com:80"
 	apiPath       string = "/mtgox"
 	httpEndpoint  string = "http://mtgox.com/api/2"
-	originUrl     string = "http://websocket.mtgox.com"
+	originURL     string = "http://websocket.mtgox.com"
 
 	// TODO: Move this into Config
 	secureConn bool = true
@@ -56,6 +56,7 @@ var (
 	}
 )
 
+// ErrorHandlerFunc is a function type to use as an error callback.
 type ErrorHandlerFunc func(error)
 
 // Client represents the public type for interacing with the MtGox streaming API.
@@ -75,10 +76,6 @@ type Client struct {
 	errHandler ErrorHandlerFunc
 
 	requestListeners map[string]chan []byte
-}
-
-func (Client) New() *Client {
-	return new(Client)
 }
 
 // Config represents a configuration type to be used when configuring the Client.
@@ -106,16 +103,16 @@ type StreamHeader struct {
 
 // New constructs a new instance of Client, returning an error
 func New(key, secret string, currencies ...string) (*Client, error) {
-	var mtgoxUrl string
+	var streamURL string
 	if secureConn {
-		mtgoxUrl = fmt.Sprintf("%s%s?Currency=%s", secureApiHost, apiPath, strings.Join(currencies, ","))
+		streamURL = fmt.Sprintf("%s%s?Currency=%s", secureAPIHost, apiPath, strings.Join(currencies, ","))
 	} else {
-		mtgoxUrl = fmt.Sprintf("%s%s?Currency=%s", apiHost, apiPath, strings.Join(currencies, ","))
+		streamURL = fmt.Sprintf("%s%s?Currency=%s", apiHost, apiPath, strings.Join(currencies, ","))
 	}
 
-	u, err := url.Parse(mtgoxUrl)
+	u, err := url.Parse(streamURL)
 	if err != nil {
-		return nil, fmt.Errorf("Error parsing URL: %s", err.Error())
+		return nil, fmt.Errorf("error parsing URL: %s", err.Error())
 	}
 
 	var netConn net.Conn
@@ -127,12 +124,12 @@ func New(key, secret string, currencies ...string) (*Client, error) {
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("Error connecting: %s", err.Error())
+		return nil, fmt.Errorf("error connecting: %s", err.Error())
 	}
 
-	conn, _, err := websocket.NewClient(netConn, u, http.Header{"Origin": {originUrl}}, 1024, 1024)
+	conn, _, err := websocket.NewClient(netConn, u, http.Header{"Origin": {originURL}}, 1024, 1024)
 	if err != nil {
-		return nil, fmt.Errorf("Opening websocket: %v", err)
+		return nil, fmt.Errorf("opening websocket: %v", err)
 	}
 
 	return NewWithConnection(key, secret, conn)
@@ -184,11 +181,13 @@ func (g *Client) Start() {
 	}()
 }
 
+// Close disconnects the client from the streaming API.
 func (g *Client) Close() {
 	g.done <- true
 }
 
-// Returns the raw websocket connection
+// Conn returns the raw websocket connection to Mt.Gox
+// (This may be removed in the future)
 func (g *Client) Conn() *websocket.Conn {
 	return g.conn
 }
@@ -208,7 +207,7 @@ func (g *Client) messages() <-chan []byte {
 			if messageType == websocket.TextMessage {
 				msgs <- data
 			} else {
-				g.errors <- fmt.Errorf("Received unknown message type: %d", messageType)
+				g.errors <- fmt.Errorf("received unknown message type: %d", messageType)
 			}
 		}
 	}(msgs)
@@ -228,7 +227,7 @@ func (g *Client) sign(body []byte) ([]byte, error) {
 
 func (g *Client) authenticatedSend(msg map[string]interface{}) error {
 	if g.key == nil || g.secret == nil {
-		return errors.New("API Key or secret is invalid or missing.")
+		return errors.New("key or secret is invalid or missing.")
 	}
 
 	req, err := json.Marshal(msg)
@@ -241,14 +240,14 @@ func (g *Client) authenticatedSend(msg map[string]interface{}) error {
 		return err
 	}
 
-	requestId := msg["id"]
+	requestID := msg["id"]
 
 	fullReq := append(append(g.key, signedReq...), req...)
 	encodedReq := base64.StdEncoding.EncodeToString(fullReq)
 
 	reqBody := map[string]interface{}{
 		"op":      "call",
-		"id":      requestId,
+		"id":      requestID,
 		"call":    encodedReq,
 		"context": "mtgox.com",
 	}
@@ -287,17 +286,17 @@ func (g *Client) handle(data []byte) {
 
 			var payload map[string]interface{}
 			json.Unmarshal(data, &payload)
-			fmt.Println(string(PrettyPrintJson(payload)))
+			fmt.Println(string(prettyPrintJson(payload)))
 		}
 	}
 }
 
-func PrettyPrintJson(p interface{}) []byte {
-	formattedJson, err := json.MarshalIndent(&p, "", "  ")
+func prettyPrintJson(p interface{}) []byte {
+	formattedJSON, err := json.MarshalIndent(&p, "", "  ")
 	if err != nil {
 		return []byte("{}")
 	}
-	return formattedJson
+	return formattedJSON
 }
 
 func (g *Client) call(endpoint string, params map[string]interface{}) (string, error) {

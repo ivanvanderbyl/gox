@@ -1,6 +1,7 @@
 # MtGox API Client
 
 [![Build Status](https://travis-ci.org/ivanvanderbyl/mtgox.png?branch=master)](https://travis-ci.org/ivanvanderbyl/mtgox)
+[![GoDoc](http://godoc.org/github.com/ivanvanderbyl/mtgox?status.png)](http://godoc.org/github.com/ivanvanderbyl/mtgox)
 
 Mt.Gox Streaming API implementation in Go.
 
