@@ -3,24 +3,23 @@
 // license that can be found in the LICENSE file.
 
 /*
-  Package mtgox implements a complete MtGox streaming API client.
+Package mtgox implements a complete MtGox streaming API client.
 
-  Overview
+Overview
 
-  The Client type represents a connection to the Mt.Gox streaming API using
-  WebSockets (Powered by the modern Gorilla WebSocket package). After creating
-  a Client instance, you should call client.Start to begin handling received
-  messages.
+The Client type represents a connection to the Mt.Gox streaming API using
+WebSockets (Powered by the modern Gorilla WebSocket package). After creating
+a Client instance, you should call client.Start to begin handling received
+messages.
 
-    client, err := mtgox.New( "KEY", "SECRET", "Currencies"...)
-    if err != nil {
-      // Handle connection error
-    }
+  client, err := mtgox.New( "KEY", "SECRET", "Currencies"...)
+  if err != nil {
+    // Handle connection error
+  }
 
-    // Start message receive routine
-    client.Start()
+  // Start message receive routine
+  client.Start()
 
-  From here all messages will be sent to their respective channels.
-
+From here all messages will be sent to their respective channels.
 */
 package mtgox

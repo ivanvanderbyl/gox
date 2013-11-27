@@ -227,7 +227,7 @@ func (g *Client) sign(body []byte) ([]byte, error) {
 
 func (g *Client) authenticatedSend(msg map[string]interface{}) error {
 	if g.key == nil || g.secret == nil {
-		return errors.New("key or secret is invalid or missing.")
+		return errors.New("key or secret is invalid or missing")
 	}
 
 	req, err := json.Marshal(msg)
@@ -286,12 +286,12 @@ func (g *Client) handle(data []byte) {
 
 			var payload map[string]interface{}
 			json.Unmarshal(data, &payload)
-			fmt.Println(string(prettyPrintJson(payload)))
+			fmt.Println(string(prettyPrintJSON(payload)))
 		}
 	}
 }
 
-func prettyPrintJson(p interface{}) []byte {
+func prettyPrintJSON(p interface{}) []byte {
 	formattedJSON, err := json.MarshalIndent(&p, "", "  ")
 	if err != nil {
 		return []byte("{}")

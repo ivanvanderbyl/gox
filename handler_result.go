@@ -6,36 +6,40 @@ import (
 	"time"
 )
 
+// ResultHeader defines a simple header structure for partially unmarshalling
+// replies from Mt.Gox to determine their type
 type ResultHeader struct {
-	Id string `json:"id"`
+	ID string `json:"id"`
 	Op string `json:"op"`
 }
 
+// ResultPayload defines a structure for unmarshalling complete replies with
+// unknown response data formats to be parsed later
 type ResultPayload struct {
 	ResultHeader
 	Result json.RawMessage `json:"result"`
 }
 
-func (g *Client) handleResult(data []byte) {
+func (c *Client) handleResult(data []byte) {
 	var header ResultHeader
 	json.Unmarshal(data, &header)
 
-	if ch, ok := g.requestListeners[header.Id]; ok {
+	if ch, ok := c.requestListeners[header.ID]; ok {
 		ch <- data
 	} else {
 		// Handle Order and other result data here
-		fmt.Printf("RESULT: %s\n", header.Id)
+		fmt.Printf("RESULT: %s\n", header.ID)
 
 		var payload map[string]interface{}
 		json.Unmarshal(data, &payload)
-		fmt.Println(string(PrettyPrintJson(payload)))
+		fmt.Println(string(prettyPrintJSON(payload)))
 	}
 }
 
-func (g *Client) handleDebug(data []byte) {
+func (c *Client) handleDebug(data []byte) {
 	var payload map[string]interface{}
 	json.Unmarshal(data, &payload)
-	fmt.Printf("DEBUG:\n%s\n", PrettyPrintJson(payload))
+	fmt.Printf("DEBUG:\n%s\n", prettyPrintJSON(payload))
 }
 
 func (c *Client) processOrderResult(data []byte) ([]Order, error) {

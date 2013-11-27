@@ -8,8 +8,8 @@ import (
 
 // Order represents a market order from your account.
 type Order struct {
-	// OrderId is the unique order identifier
-	OrderId string `json:"oid,string"`
+	// OrderID is the unique order identifier
+	OrderID string `json:"oid,string"`
 
 	// Currency represents the external fiat currency
 	Currency string `json:"currency,string"`
@@ -43,6 +43,7 @@ type Order struct {
 	Priority uint64 `json:"priority,string"`
 }
 
+// UnmarshalJSON is a custom unmarshaller for Mt.Gox order payloads
 func (o *Order) UnmarshalJSON(data []byte) error {
 	var raw map[string]interface{}
 	err := json.Unmarshal(data, &raw)
@@ -55,7 +56,7 @@ func (o *Order) UnmarshalJSON(data []byte) error {
 		case string:
 			switch k {
 			case "oid":
-				o.OrderId = vv
+				o.OrderID = vv
 			case "currency":
 				o.Currency = vv
 			case "item":

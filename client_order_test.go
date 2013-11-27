@@ -88,7 +88,7 @@ func TestOrderPayloadUnmarshal(t *testing.T) {
 		{"Currency", "AUD", orders[0].Currency},
 		{"Instrument", "BTC", orders[0].Instrument},
 		{"OrderType", "ask", orders[0].OrderType},
-		{"OrderId", "bc1fb5dc-450e-438e-a80b-96cdaf6ba86c", orders[0].OrderId},
+		{"OrderID", "bc1fb5dc-450e-438e-a80b-96cdaf6ba86c", orders[0].OrderID},
 	}
 
 	for _, e := range stringExpectations {
