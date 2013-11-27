@@ -5,7 +5,8 @@ import (
 	"time"
 )
 
-// Dispatches a request for private/info, returning an info payload or timing out
+// RequestInfo dispatches a request for `private/info`, returning an info
+// payload or timing out after 10 seconds.
 func (g *Client) RequestInfo() *Info {
 	g.call("private/info", nil)
 
@@ -33,6 +34,7 @@ func (g *Client) RequestInfo() *Info {
 // 	}
 // }
 
+// RequestOrders fetches the open orders for your account
 func (g *Client) RequestOrders() (<-chan []Order, error) {
 	reqId, err := g.call("private/orders", nil)
 	if err != nil {
@@ -43,6 +45,8 @@ func (g *Client) RequestOrders() (<-chan []Order, error) {
 	go func() {
 		replyChan := make(chan []byte, 1)
 		defer close(replyChan)
+		defer close(normalisedReplyChan)
+
 		g.enqueuePendingRequest(reqId, replyChan)
 		data := <-replyChan
 		result, err := g.processOrderResult(data)
@@ -75,4 +79,32 @@ func (g *Client) RequestOrderLag() (time.Duration, error) {
 		close(replyChan)
 		return g.processLagResult(lagData)
 	}
+}
+
+// GetHistory returns the histroy for the given wallet ID
+func (g *Client) GetHistory(walletID string) []Order {
+	return []Order{}
+}
+
+// QueryOrder returns updated information for the given order
+func (g *Client) QueryOrder(orderID string) (Order, error) {
+	return Order{}, nil
+}
+
+// PlaceOrder adds the given Order to the market, returning the new ID
+func (g *Client) PlaceOrder(o Order) (string, error) {
+	if o.OrderID != "" {
+		return "", errors.New("order should not have an ID yet")
+	}
+	return "", nil
+}
+
+// QuoteOrder retrieves a quote for the given Order
+func (g *Client) QuoteOrder(o Order) (string, error) {
+	return "", nil
+}
+
+// CancelOrder will cancel the given order if already added to the market
+func (g *Client) CancelOrder(o Order) (string, error) {
+	return "", nil
 }

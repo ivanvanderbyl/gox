@@ -27,12 +27,12 @@ type Info struct {
 }
 
 type Wallet struct {
-	Balance              Value
-	Daily_Withdraw_Limit Value
-	Max_Withdraw         Value
+	Balance            Value
+	DailyWithdrawLimit Value
+	MaxWithdraw        Value
 	// Monthly_Withdraw_Limit nil
-	Open_Orders Value
-	Operations  int64
+	OpenOrders Value
+	Operations int64
 }
 
 type Rate struct {
