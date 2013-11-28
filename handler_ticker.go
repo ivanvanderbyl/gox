@@ -12,6 +12,10 @@ type CurrencyValue struct {
 	Currency     string
 }
 
+func (c *CurrencyValue) AsFloat() float64 {
+	return float64(c.Value) / currencyDivisions[c.Currency]
+}
+
 func (tv *CurrencyValue) UnmarshalJSON(data []byte) error {
 	var raw map[string]string
 	err := json.Unmarshal(data, &raw)

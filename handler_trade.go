@@ -14,8 +14,8 @@ type TradePayload struct {
 type Trade struct {
 	Type       string
 	Tid        string
-	Amount     int64
-	Price      int64
+	Amount     float64
+	Price      float64
 	Instrument string
 	Currency   string
 	TradeType  string
@@ -31,6 +31,8 @@ func (t *Trade) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
+
+	var priceInt, amountInt int64
 
 	for k, v := range raw {
 		switch vv := v.(type) {
@@ -51,12 +53,12 @@ func (t *Trade) UnmarshalJSON(data []byte) error {
 			case "properties":
 				t.Properties = vv
 			case "amount_int":
-				t.Amount, err = strconv.ParseInt(vv, 10, 64)
+				amountInt, err = strconv.ParseInt(vv, 10, 64)
 				if err != nil {
 					return err
 				}
 			case "price_int":
-				t.Price, err = strconv.ParseInt(vv, 10, 64)
+				priceInt, err = strconv.ParseInt(vv, 10, 64)
 				if err != nil {
 					return err
 				}
@@ -69,6 +71,9 @@ func (t *Trade) UnmarshalJSON(data []byte) error {
 			}
 		}
 	}
+
+	t.Price = float64(priceInt) / currencyDivisions[t.Currency]
+	t.Amount = float64(amountInt) / currencyDivisions[t.Currency]
 
 	return nil
 }
